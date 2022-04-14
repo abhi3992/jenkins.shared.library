@@ -1,0 +1,111 @@
+create_deployment: true
+deploymentName: podium-worklist-management-service
+namespace: default
+imagePullSecretsName: lldigital-docker-dev
+templateLabels:
+  application: csc
+  environment: podium-io-dev
+  project: podium-app-dev
+  team: supply-chain
+
+deploymentConfig:
+  - image:
+      repository: lldigital-docker.jfrog.io/podium-lib-cnt-svc-tenancy-alertandnotification
+      tag: "2021-08.0.0-dev.162"
+      imagePullPolicy: Always
+    containerName: podium-lib-cnt-svc-tenancy-alertandnotification
+    containerPort: 9007
+    protocol: TCP
+    environmentVars:
+    livenessProbe:
+      enabled: true
+      path: "/actuator/health/liveness"
+      port: 9007
+      scheme: HTTP
+      initialDelaySeconds: 120
+      periodSeconds: 10
+      timeoutSeconds: 1
+      successThreshold: 1
+      failureThreshold: 3
+    readinessProbe:
+      enabled: true
+      path: "/actuator/health/readiness"
+      port: 9007
+      scheme: HTTP
+      initialDelaySeconds: 120
+      periodSeconds: 10
+      timeoutSeconds: 1
+      successThreshold: 1
+      failureThreshold: 3
+    volumes:
+      enabled: true
+    persistentVolume:
+      enabled: false
+    secrets:
+      enabled: true
+      volumes:
+        - name: db-ssl-lendleaseau
+          path: /var/db-ssl/lendleaseau/
+
+  - image:
+      repository: lldigital-docker.jfrog.io/podium-lib-cnt-svc-tenancy-workmanagement
+      tag: "2021-10.0.0-dev.84"
+      imagePullPolicy: Always
+    containerName: podium-lib-cnt-svc-tenancy-workmanagement
+    containerPort: 9008
+    protocol: TCP
+    environmentVars:
+    livenessProbe:
+      enabled: true
+      path: "/actuator/health/liveness"
+      port: 9008
+      scheme: HTTP
+      initialDelaySeconds: 120
+      periodSeconds: 10
+      timeoutSeconds: 1
+      successThreshold: 1
+      failureThreshold: 3
+    readinessProbe:
+      enabled: true
+      path: "/actuator/health/readiness"
+      port: 9008
+      scheme: HTTP
+      initialDelaySeconds: 120
+      periodSeconds: 10
+      timeoutSeconds: 1
+      successThreshold: 1
+      failureThreshold: 3
+    volumes:
+      enabled: true
+    persistentVolume:
+      enabled: false
+    secrets:
+      enabled: true
+      volumes:
+        - name: db-ssl-lendleaseau
+          path: /var/db-ssl/lendleaseau/
+
+ingress:
+  enabled: true
+  rewritePath: /$2
+  hosts:
+    - host: lendleaseau.internal.dev.podium.io
+      paths:
+        - path: /api/tenancy/alert(/|$)(.*)
+          service_name: podium-worklist-management-service
+          service_port: 9007
+        - path: /api/tenancy/work(/|$)(.*)
+          service_name: podium-worklist-management-service
+          service_port: 9008
+
+service:
+  type: ClusterIP
+  portConfiguration:
+    - port: 9007
+      targetPort: 9007
+      protocol: TCP
+      name: podium-lib-cnt-svc-tenancy-alertandnotification
+    - port: 9008
+      targetPort: 9008
+      protocol: TCP
+      name: podium-lib-cnt-svc-tenancy-workmanagement
